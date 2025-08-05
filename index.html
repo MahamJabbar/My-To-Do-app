@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>To-Do List</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-t from-indigo-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center p-4">
+
+  <!--Main Container -->
+  <div class="bg-white/50 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+    <h1 class="text-3xl font-bold text-center text-purple-700 mb-6">🌟 My To-Do List</h1>
+
+    <!--Input Section -->
+    <div class="flex mb-4">
+      <input
+        id="taskInput"
+        type="text"
+        placeholder="Enter a new task"
+        class="flex-1 px-4 py-2 bg-white/50 border border-purple-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-purple-400"
+      />
+      <button
+        id="addBtn"
+        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-r-md">
+        Add
+      </button>
+    </div>
+
+    <!--Task Container -->
+    <div id="taskList" class="flex flex-row flex-wrap gap-3 justify-between"></div>
+  </div>
+<script>
+  const taskInput = document.getElementById("taskInput");
+  const taskList = document.getElementById("taskList");
+  const addBtn = document.getElementById("addBtn");
+
+  let tasks = [];
+
+  function loadTasks() {
+    const stored = localStorage.getItem("tasks");
+    if (stored) {
+      tasks = JSON.parse(stored);
+    } else {
+      tasks = [
+        "Complete HTML assignment",
+        "Study JavaScript DOM",
+        "Create To-Do app UI",
+        "Revise Tailwind CSS utilities",
+        "All tasks Revise"
+      ];
+      saveTasks();
+    }
+    refreshList();
+  }
+
+  function saveTasks() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }
+
+  function refreshList() {
+    taskList.innerHTML = "";
+    tasks.forEach((task, index) => renderTask(task, index));
+  }
+
+  function renderTask(taskText, index) {
+    const taskDiv = document.createElement("div");
+    taskDiv.className =
+      "relative flex items-center justify-center text-left bg-white/50 hover:bg-purple-100 transition-colors duration-200 p-2 rounded-lg shadow w-[120px] h-[100px] cursor-pointer";
+    taskDiv.setAttribute("draggable", "false");
+    taskDiv.dataset.index = index;
+
+    const span = document.createElement("span");
+    span.textContent = taskText;
+    span.className = "text-sm font-medium text-center";
+
+    // Toggle completed style
+    span.addEventListener("click", () => {
+      span.classList.toggle("line-through");
+      span.classList.toggle("text-gray-400");
+      saveTasks();
+    });
+
+    // Enable dragging after double click
+    span.addEventListener("dblclick", () => {
+      taskDiv.setAttribute("draggable", "true");
+      taskDiv.classList.add("ring-2", "ring-purple-400");
+    });
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "❌";
+    delBtn.className = "absolute top-1 right-1 text-red-500 hover:text-red-700 text-xs";
+    delBtn.addEventListener("click", () => {
+      tasks.splice(index, 1);
+      saveTasks();
+      refreshList();
+    });
+
+    // Drag Events
+    taskDiv.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text/plain", index);
+      taskDiv.classList.add("opacity-50");
+    });
+
+    taskDiv.addEventListener("dragend", () => {
+      taskDiv.classList.remove("opacity-50");
+    });
+     // Necessary for drop
+    taskDiv.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+
+    taskDiv.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
+      const toIndex = parseInt(taskDiv.dataset.index);
+      if (fromIndex !== toIndex) {
+        const [movedTask] = tasks.splice(fromIndex, 1);
+        tasks.splice(toIndex, 0, movedTask);
+        saveTasks();
+        refreshList();
+      }
+    });
+
+    taskDiv.appendChild(span);
+    taskDiv.appendChild(delBtn);
+    taskList.appendChild(taskDiv);
+  }
+
+  function addTask() {
+    const text = taskInput.value.trim();
+    if (text !== "") {
+      tasks.push(text);
+      saveTasks();
+      refreshList();
+      taskInput.value = "";
+    }
+  }
+  addBtn.addEventListener("click", addTask);
+  taskInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addTask();
+  });
+
+  loadTasks();
+</script>
+
+</body>
+</html>
